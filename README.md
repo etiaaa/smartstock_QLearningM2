@@ -62,3 +62,49 @@ Restaurateurs indépendants — bistrots, brasseries, restaurants de quartier. P
 - Impact métier chiffré : comparaison DQN vs politique fixe en termes de ventes, gaspillage et ruptures
 - Application web de démonstration (`python app_web.py` puis ouvrir `http://localhost:5000`) : dashboard interactif permettant de simuler la gestion d'un restaurant jour par jour avec 4 produits (Saumon, Légumes, Pain, Fromage), visualisation des stocks, recommandations de l'agent, et comparaison avec une gestion sans IA
 - Préparation de la soutenance
+
+## 9. Comment exécuter le projet
+
+### Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+### Lancer les entraînements et analyses
+
+```bash
+# Tests des environnements
+python env/test_env.py
+python env/test_env_multi.py
+
+# Entraînement Q-learning tabulaire (mono-produit, ~5 secondes)
+python agents/train_q_learning.py
+
+# Tuning Q-learning (9 configurations, ~30 secondes)
+python agents/tune_q_learning.py
+
+# Entraînement DQN (multi-produits, ~3 minutes)
+python agents/train_dqn.py
+
+# Tuning DQN (5 configurations, ~5 minutes)
+python agents/tune_dqn.py
+
+# Comparaison finale Q-learning vs DQN (~5 minutes)
+python agents/compare_qlearning_dqn.py
+
+# Analyse des politiques apprises (~3 minutes)
+python agents/analyze_policies.py
+
+# Tests de robustesse (~5 minutes)
+python agents/robustness_tests.py
+```
+
+### Lancer l'application web de démonstration
+
+```bash
+python app_web.py
+# Puis ouvrir http://localhost:5000 dans le navigateur
+```
+
+Tous les résultats (courbes, modèles, graphiques) sont générés dans le dossier `results/`.
