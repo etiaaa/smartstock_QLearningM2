@@ -1,0 +1,27 @@
+POLITIQUE APPRISE PAR LE DQN (multi-produits)
+======================================================================
+Comportement moyen observe sur 50 episodes de test
+
+Quantite moyenne commandee par jour de la semaine et par produit :
+----------------------------------------------------------------------
+Jour                Saumon       Legumes          Pain
+----------------------------------------------------------------------
+Lundi                 3.23          7.79          8.00
+Mardi                 1.33          7.94          6.10
+Mercredi              6.89          7.33          7.93
+Jeudi                 6.32          7.12          7.71
+Vendredi              6.56          7.37          7.89
+Samedi                7.28          5.74          6.50
+Dimanche              5.28          7.83          7.91
+
+Demande moyenne servie par jour de la semaine et par produit :
+----------------------------------------------------------------------
+Jour                Saumon       Legumes          Pain
+----------------------------------------------------------------------
+Lundi                 2.98          4.97          6.92
+Mardi                 2.72          6.24          6.00
+Mercredi              3.88          5.82          7.50
+Jeudi                 4.01          7.00          7.35
+Vendredi              6.08          7.89          7.87
+Samedi                7.07          8.90          6.50
+Dimanche              5.09          6.92          7.86

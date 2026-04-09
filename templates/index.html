@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartStock — Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a1a3e, #0f0f2a);
+            border-bottom: 1px solid #2a2a4a;
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 { font-size: 20px; color: #fff; }
+        .header h1 span { color: #ff4d6d; }
+        .header .sub { font-size: 12px; color: #888; margin-left: 14px; }
+        .day-badge {
+            background: #ff4d6d; color: white;
+            padding: 6px 16px; border-radius: 20px;
+            font-weight: 600; font-size: 13px;
+        }
+
+        .main { padding: 20px 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .full { grid-column: 1 / -1; }
+
+        .card {
+            background: #1a1a30;
+            border: 1px solid #2a2a4a;
+            border-radius: 10px;
+            padding: 18px;
+        }
+        .card-title {
+            font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+            color: #888; margin-bottom: 14px;
+        }
+
+        /* Explainer */
+        .explainer {
+            background: linear-gradient(135deg, #1a2a4a, #1a1a3e);
+            border: 1px solid #3a4a6a;
+            border-radius: 10px;
+            padding: 16px 20px;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #bbb;
+        }
+        .explainer strong { color: #fff; }
+        .explainer .highlight { color: #ff4d6d; font-weight: 600; }
+
+        /* Metrics */
+        .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+        .metric {
+            background: #12122a; border: 1px solid #2a2a4a;
+            border-radius: 8px; padding: 14px; text-align: center;
+        }
+        .metric .val { font-size: 26px; font-weight: 700; }
+        .metric .lbl { font-size: 10px; color: #888; margin-top: 2px; text-transform: uppercase; }
+        .metric .unit { font-size: 11px; color: #666; }
+        .green .val { color: #2ecc71; }
+        .blue .val { color: #3498db; }
+        .purple .val { color: #9b59b6; }
+        .red .val { color: #ff4d6d; }
+        .orange .val { color: #f39c12; }
+
+        /* Products */
+        .products { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+        .prod {
+            background: #12122a; border: 1px solid #2a2a4a;
+            border-radius: 10px; padding: 16px;
+            transition: border-color 0.2s;
+        }
+        .prod:hover { border-color: #ff4d6d; }
+        .prod-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .prod-emoji { font-size: 28px; }
+        .prod-name { font-size: 15px; font-weight: 600; }
+        .prod-dlc { font-size: 10px; color: #888; }
+
+        .prod-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; }
+        .prod-row .label { color: #888; }
+        .prod-row .value { font-weight: 600; }
+
+        .stock-bar { height: 8px; background: #2a2a4a; border-radius: 4px; margin: 8px 0; overflow: hidden; }
+        .stock-fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+
+        .prod-reco {
+            margin-top: 10px; padding: 8px 12px;
+            background: rgba(46, 204, 113, 0.12);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            border-radius: 8px;
+            text-align: center;
+        }
+        .prod-reco .reco-title { font-size: 10px; color: #2ecc71; text-transform: uppercase; }
+        .prod-reco .reco-value { font-size: 20px; font-weight: 700; color: #2ecc71; }
+        .prod-reco .reco-unit { font-size: 11px; color: #888; }
+
+        /* Activity */
+        .activity-row {
+            display: flex; gap: 8px; padding: 6px 0;
+            border-bottom: 1px solid #1a1a2a; font-size: 12px;
+        }
+        .activity-row:last-child { border-bottom: none; }
+        .act-prod { width: 70px; font-weight: 600; }
+        .act-detail { color: #888; flex: 1; }
+        .act-detail .served { color: #2ecc71; }
+        .act-detail .wasted { color: #ff4d6d; }
+        .act-detail .stockout { color: #f39c12; }
+
+        /* Chart */
+        .chart-box { height: 180px; position: relative; }
+
+        /* Comparison */
+        .comp { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: center; }
+        .comp-side { text-align: center; padding: 16px; border-radius: 10px; }
+        .comp-side.win { background: rgba(46, 204, 113, 0.1); border: 1px solid rgba(46, 204, 113, 0.3); }
+        .comp-side.lose { background: rgba(255, 77, 109, 0.08); border: 1px solid rgba(255, 77, 109, 0.2); }
+        .comp-side h3 { font-size: 12px; color: #888; margin-bottom: 8px; }
+        .comp-side .big { font-size: 34px; font-weight: 700; }
+        .comp-side.win .big { color: #2ecc71; }
+        .comp-side.lose .big { color: #ff4d6d; }
+        .comp-side .info { font-size: 11px; color: #888; margin-top: 4px; }
+        .comp-vs { font-size: 18px; font-weight: 700; color: #444; }
+        .comp-verdict {
+            text-align: center; margin-top: 12px; padding: 10px;
+            background: rgba(46, 204, 113, 0.1); border-radius: 8px;
+            font-size: 13px; color: #2ecc71; font-weight: 600;
+        }
+
+        /* Buttons */
+        .btns { display: flex; gap: 10px; justify-content: center; margin-top: 14px; }
+        .btn {
+            padding: 10px 24px; border: none; border-radius: 8px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .btn:hover { transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .btn-primary { background: #ff4d6d; color: white; }
+        .btn-secondary { background: #2a2a5a; color: white; }
+        .btn-outline { background: transparent; border: 1px solid #444; color: #ccc; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div style="display:flex;align-items:center;">
+            <h1>Smart<span>Stock</span></h1>
+            <span class="sub">Aide a la decision pour la commande d'ingredients frais</span>
+        </div>
+        <div class="day-badge" id="dayBadge">Jour 0 — Lundi</div>
+    </div>
+
+    <div class="main">
+        <!-- Explainer -->
+        <div class="explainer full" id="explainer">
+            Bienvenue sur <strong>SmartStock</strong>. Chaque matin, notre agent IA analyse le
+            <strong>stock restant</strong>, les <strong>ventes des jours precedents</strong> et le
+            <strong>jour de la semaine</strong> pour recommander la quantite optimale a commander
+            pour chaque ingredient. Cliquez sur <span class="highlight">Jour suivant</span> pour
+            voir ses decisions jour apres jour, ou sur <span class="highlight">Simuler le mois</span>
+            pour voir le bilan complet sur 30 jours.
+        </div>
+
+        <!-- Metrics -->
+        <div class="card full">
+            <div class="card-title">Bilan du mois en cours</div>
+            <div class="metrics">
+                <div class="metric green">
+                    <div class="val" id="mServed">0</div>
+                    <div class="unit">portions vendues</div>
+                    <div class="lbl">Ventes realisees</div>
+                </div>
+                <div class="metric blue">
+                    <div class="val" id="mPct">0%</div>
+                    <div class="unit">demandes satisfaites</div>
+                    <div class="lbl">Taux de service</div>
+                </div>
+                <div class="metric red">
+                    <div class="val" id="mWaste">0</div>
+                    <div class="unit">portions jetees (perimees)</div>
+                    <div class="lbl">Gaspillage</div>
+                </div>
+                <div class="metric orange">
+                    <div class="val" id="mStockout">0</div>
+                    <div class="unit">clients repartis sans etre servis</div>
+                    <div class="lbl">Ruptures de stock</div>
+                </div>
+                <div class="metric purple">
+                    <div class="val" id="mReward">0</div>
+                    <div class="unit">score de performance RL</div>
+                    <div class="lbl">Score de l'agent</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products -->
+        <div class="card full">
+            <div class="card-title">Etat des stocks et recommandations de l'agent pour demain</div>
+            <div class="products" id="productsGrid">
+                {% for p in products %}
+                <div class="prod" id="prod-{{ loop.index0 }}">
+                    <div class="prod-header">
+                        <div class="prod-emoji">{{ p.emoji }}</div>
+                        <div>
+                            <div class="prod-name">{{ p.name }}</div>
+                            <div class="prod-dlc">Se conserve {{ p.shelf_life }} jour{{ 's' if p.shelf_life > 1 else '' }} — marge {{ p.margin }} euros/unite</div>
+                        </div>
+                    </div>
+                    <div class="prod-row">
+                        <span class="label">Stock actuel</span>
+                        <span class="value stock-val">0 unites</span>
+                    </div>
+                    <div class="stock-bar"><div class="stock-fill" style="width:0%"></div></div>
+                    <div class="prod-row">
+                        <span class="label">Derniere demande</span>
+                        <span class="value last-demand">—</span>
+                    </div>
+                    <div class="prod-reco">
+                        <div class="reco-title">Recommandation pour demain</div>
+                        <div class="reco-value">0</div>
+                        <div class="reco-unit">unites a commander</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="btns">
+                <button class="btn btn-primary" id="btnNext" onclick="nextDay()">Jour suivant</button>
+                <button class="btn btn-secondary" id="btnWeek" onclick="runWeek()">Simuler la semaine</button>
+                <button class="btn btn-secondary" id="btnRun" onclick="runAll()">Simuler le mois entier</button>
+                <button class="btn btn-outline" onclick="resetSim()">Nouveau mois</button>
+            </div>
+        </div>
+
+        <!-- Activity -->
+        <div class="card">
+            <div class="card-title">Ce qui s'est passe aujourd'hui</div>
+            <div id="dayDetail" style="color:#666;font-size:13px;">
+                Cliquez sur "Jour suivant" pour demarrer la simulation.
+            </div>
+        </div>
+
+        <!-- Chart -->
+        <div class="card">
+            <div class="card-title">Performance quotidienne de l'agent (ventes - pertes)</div>
+            <div class="chart-box"><canvas id="rewardChart"></canvas></div>
+        </div>
+
+        <!-- Comparison -->
+        <div class="card full" id="compCard" style="display:none;">
+            <div class="card-title">Resultat : Agent SmartStock vs gestion manuelle classique</div>
+            <div class="comp">
+                <div class="comp-side win">
+                    <h3>Agent SmartStock (IA)</h3>
+                    <div class="big" id="compAgentR">0</div>
+                    <div class="info">euros de marge</div>
+                    <div class="info" id="compAgentD"></div>
+                </div>
+                <div class="comp-vs">VS</div>
+                <div class="comp-side lose">
+                    <h3>Commande fixe (sans IA)</h3>
+                    <div class="big" id="compBaseR">0</div>
+                    <div class="info">euros de marge</div>
+                    <div class="info" id="compBaseD"></div>
+                </div>
+            </div>
+            <div class="comp-verdict" id="compVerdict"></div>
+        </div>
+    </div>
+
+    <script>
+        const colors = ['#e74c3c', '#2ecc71', '#f39c12', '#3498db'];
+
+        let chart = new Chart(document.getElementById('rewardChart'), {
+            type: 'bar',
+            data: { labels: [], datasets: [{
+                label: 'Marge/jour (euros)',
+                data: [],
+                backgroundColor: 'rgba(46, 204, 113, 0.5)',
+                borderColor: '#2ecc71', borderWidth: 1,
+            }]},
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: '#1a1a30' }, ticks: { color: '#666', font: { size: 10 } } },
+                    y: { grid: { color: '#1a1a30' }, ticks: { color: '#666' } }
+                }
+            }
+        });
+
+        async function api(url) { return (await fetch(url)).json(); }
+
+        function updateUI(d) {
+            document.getElementById('dayBadge').textContent = 'Jour ' + d.day + ' — ' + d.day_name;
+            document.getElementById('mReward').textContent = Math.round(d.total_reward);
+            document.getElementById('mServed').textContent = d.total_served;
+            document.getElementById('mPct').textContent = d.pct_served + '%';
+            document.getElementById('mWaste').textContent = d.total_waste;
+            document.getElementById('mStockout').textContent = d.total_stockout;
+
+            d.stocks.forEach((s, i) => {
+                const card = document.getElementById('prod-' + i);
+                if (!card) return;
+                const pct = Math.round(100 * s.stock / s.max);
+                card.querySelector('.stock-val').textContent = s.stock + ' / ' + s.max + ' unites';
+                card.querySelector('.stock-fill').style.width = pct + '%';
+                card.querySelector('.stock-fill').style.background = colors[i];
+            });
+
+            if (d.recommendation) {
+                d.recommendation.forEach((r, i) => {
+                    const card = document.getElementById('prod-' + i);
+                    if (card) card.querySelector('.reco-value').textContent = r.qty;
+                });
+            }
+
+            if (d.last_day) {
+                d.last_day.products.forEach((p, i) => {
+                    const card = document.getElementById('prod-' + i);
+                    if (card) card.querySelector('.last-demand').textContent = p.demand + ' portions demandees';
+                });
+
+                let html = '';
+                d.last_day.products.forEach((p, i) => {
+                    html += '<div class="activity-row">';
+                    html += '<div class="act-prod" style="color:' + colors[i] + '">' + p.name + '</div>';
+                    html += '<div class="act-detail">';
+                    html += 'Commande ' + p.ordered + ' — Demande ' + p.demand + ' — ';
+                    html += '<span class="served">' + p.served + ' servis</span>';
+                    html += ' — Reste <strong>' + p.stock_after + '</strong> en stock';
+                    if (p.wasted > 0) html += ' — <span class="wasted">' + p.wasted + ' jetes (perime)</span>';
+                    if (p.stockout > 0) html += ' — <span class="stockout">' + p.stockout + ' clients non servis</span>';
+                    html += '</div></div>';
+                });
+                document.getElementById('dayDetail').innerHTML = html;
+            }
+
+            chart.data.labels = d.rewards_per_day.map((_, i) => 'J' + (i + 1));
+            chart.data.datasets[0].data = d.rewards_per_day;
+            chart.data.datasets[0].backgroundColor = d.rewards_per_day.map(v =>
+                v >= 0 ? 'rgba(46,204,113,0.5)' : 'rgba(255,77,109,0.5)');
+            chart.update();
+
+            if (d.done) {
+                document.getElementById('compCard').style.display = 'block';
+                document.getElementById('compAgentR').textContent = Math.round(d.total_reward);
+                document.getElementById('compBaseR').textContent = Math.round(d.baseline.reward);
+                document.getElementById('compAgentD').textContent =
+                    d.total_waste + ' gaspilles | ' + d.total_stockout + ' ruptures';
+                document.getElementById('compBaseD').textContent =
+                    d.baseline.waste + ' gaspilles | ' + d.baseline.stockout + ' ruptures';
+                const gainServed = d.total_served - Math.round(d.baseline.reward / 5);
+                const lessWaste = d.baseline.waste - d.total_waste;
+                const lessStockout = d.baseline.stockout - d.total_stockout;
+                document.getElementById('compVerdict').textContent =
+                    'L\'agent SmartStock sert ' + Math.abs(lessStockout) + ' clients de plus, ' +
+                    (lessWaste > 0 ? 'gaspille ' + lessWaste + ' portions de moins, ' : '') +
+                    'et obtient un score de performance ' + Math.round(d.total_reward) +
+                    ' contre ' + Math.round(d.baseline.reward) + ' pour la gestion fixe.';
+                document.getElementById('btnNext').disabled = true;
+                document.getElementById('btnRun').disabled = true;
+                document.getElementById('explainer').innerHTML =
+                    '<strong>Mois termine !</strong> L\'agent a gere 4 ingredients pendant 30 jours. ' +
+                    'Consultez la comparaison en bas pour voir le gain par rapport a une gestion classique. ' +
+                    'Cliquez sur <span class="highlight">Nouveau mois</span> pour relancer avec une demande differente.';
+            }
+        }
+
+        async function nextDay() {
+            const d = await api('/api/step');
+            updateUI(d);
+        }
+        async function runWeek() {
+            for (let i = 0; i < 7; i++) {
+                const d = await api('/api/step');
+                updateUI(d);
+                if (d.done) break;
+            }
+        }
+        async function runAll() {
+            document.getElementById('btnRun').disabled = true;
+            document.getElementById('btnNext').disabled = true;
+            updateUI(await api('/api/run_all'));
+        }
+        async function resetSim() {
+            document.getElementById('compCard').style.display = 'none';
+            document.getElementById('btnNext').disabled = false;
+            document.getElementById('btnRun').disabled = false;
+            document.getElementById('dayDetail').innerHTML =
+                '<span style="color:#666;font-size:13px;">Cliquez sur "Jour suivant" pour demarrer.</span>';
+            document.getElementById('explainer').innerHTML =
+                'Bienvenue sur <strong>SmartStock</strong>. Chaque matin, notre agent IA analyse le ' +
+                '<strong>stock restant</strong>, les <strong>ventes des jours precedents</strong> et le ' +
+                '<strong>jour de la semaine</strong> pour recommander la quantite optimale a commander. ' +
+                'Cliquez sur <span class="highlight">Jour suivant</span> pour voir ses decisions.';
+            updateUI(await api('/api/reset'));
+        }
+        resetSim();
+    </script>
+</body>
+</html>
